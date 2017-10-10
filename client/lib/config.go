@@ -1,9 +1,4 @@
-package main
-
-import (
-	"encoding/json"
-	"os"
-)
+package lib
 
 // Config for client
 type Config struct {
@@ -32,14 +27,4 @@ type Config struct {
 	Log          string `json:"log"`
 	SnmpLog      string `json:"snmplog"`
 	SnmpPeriod   int    `json:"snmpperiod"`
-}
-
-func parseJSONConfig(config *Config, path string) error {
-	file, err := os.Open(path) // For read access.
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	return json.NewDecoder(file).Decode(config)
 }
