@@ -76,7 +76,7 @@ func handleClient(sess *smux.Session, p1 io.ReadWriteCloser) {
 	}
 }
 
-func Run(config *Config, version string) error {
+func Run(config *Config, version string, onListening func(net.Addr)) error {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	switch config.Mode {
 	case "normal":
@@ -98,6 +98,7 @@ func Run(config *Config, version string) error {
 	if err != nil {
 		return err
 	}
+	onListening(listener.Addr())
 
 	pass := pbkdf2.Key([]byte(config.Key), []byte(SALT), 4096, 32, sha1.New)
 	var block kcp.BlockCrypt

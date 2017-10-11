@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"os"
 
 	"github.com/getlantern/kcptun/client/lib"
@@ -203,7 +204,7 @@ func main() {
 			log.SetOutput(f)
 		}
 
-		return lib.Run(config, VERSION)
+		return lib.Run(config, VERSION, func(addr net.Addr) {})
 	}
 	myApp.Run(os.Args)
 }

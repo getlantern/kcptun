@@ -102,7 +102,7 @@ func handleClient(p1, p2 io.ReadWriteCloser) {
 	}
 }
 
-func Run(config *Config, version string) error {
+func Run(config *Config, version string, onListening func(net.Addr)) error {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	switch config.Mode {
 	case "normal":
@@ -152,6 +152,7 @@ func Run(config *Config, version string) error {
 	if err != nil {
 		return err
 	}
+	onListening(lis.Addr())
 	log.Println("listening on:", lis.Addr())
 	log.Println("target:", config.Target)
 	log.Println("encryption:", config.Crypt)

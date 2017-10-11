@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"math/rand"
+	"net"
 	_ "net/http/pprof"
 	"os"
 	"time"
@@ -195,7 +196,7 @@ func main() {
 			log.SetOutput(f)
 		}
 
-		return lib.Run(config, VERSION)
+		return lib.Run(config, VERSION, func(net.Addr) {})
 	}
 	myApp.Run(os.Args)
 }
