@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/crypto/pbkdf2"
 
+	kcp "github.com/getlantern/kcp-go"
 	"github.com/golang/snappy"
-	kcp "github.com/xtaci/kcp-go"
 	"github.com/xtaci/smux"
 )
 
