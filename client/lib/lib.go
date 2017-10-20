@@ -203,14 +203,14 @@ func Run(config *Config, version string, onListening func(net.Addr), refresh <-c
 	}
 
 	numconn := uint16(config.Conn)
-	var mux struct {
+	type mux struct {
 		session *smux.Session
 		ttl     time.Time
 	}
 	muxes := make([]mux, numconn)
 
 	createSessions := func(ms *[]mux) {
-		log.Debugf("Setting up sessions")
+		log.Println("Setting up sessions")
 		muxes := *ms
 		for k := range muxes {
 			muxes[k].session = waitConn()
