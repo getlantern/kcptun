@@ -224,31 +224,29 @@ func Run(config *Config, version string, onListening func(net.Addr), refresh <-c
 	go snmpLogger(config.SnmpLog, config.SnmpPeriod)
 	rr := uint16(0)
 	for {
-		for {
-			select {
-			case _ = <-refresh:
-				createSessions(&muxes)
-				break
-			default:
-				p1, err := listener.AcceptTCP()
-				if err != nil {
-					return err
-				}
-				if err != nil {
-					return err
-				}
-				idx := rr % numconn
-
-				// do auto expiration && reconnection
-				if muxes[idx].session.IsClosed() || (config.AutoExpire > 0 && time.Now().After(muxes[idx].ttl)) {
-					chScavenger <- muxes[idx].session
-					muxes[idx].session = waitConn()
-					muxes[idx].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
-				}
-
-				go handleClient(muxes[idx].session, p1)
-				rr++
+		select {
+		case _ = <-refresh:
+			createSessions(&muxes)
+			break
+		default:
+			p1, err := listener.AcceptTCP()
+			if err != nil {
+				return err
 			}
+			if err != nil {
+				return err
+			}
+			idx := rr % numconn
+
+			// do auto expiration && reconnection
+			if muxes[idx].session.IsClosed() || (config.AutoExpire > 0 && time.Now().After(muxes[idx].ttl)) {
+				chScavenger <- muxes[idx].session
+				muxes[idx].session = waitConn()
+				muxes[idx].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
+			}
+
+			go handleClient(muxes[idx].session, p1)
+			rr++
 		}
 	}
 }
