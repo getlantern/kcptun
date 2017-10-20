@@ -76,7 +76,7 @@ func handleClient(sess *smux.Session, p1 io.ReadWriteCloser) {
 	}
 }
 
-func Run(config *Config, version string, onListening func(net.Addr)) error {
+func Run(config *Config, version string, onListening func(net.Addr), refresh <-chan struct{}) error {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	switch config.Mode {
 	case "normal":
@@ -203,39 +203,53 @@ func Run(config *Config, version string, onListening func(net.Addr)) error {
 	}
 
 	numconn := uint16(config.Conn)
-	muxes := make([]struct {
+	var mux struct {
 		session *smux.Session
 		ttl     time.Time
-	}, numconn)
-
-	for k := range muxes {
-		muxes[k].session = waitConn()
-		muxes[k].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
 	}
+	muxes := make([]mux, numconn)
+
+	createSessions := func(ms *[]mux) {
+		log.Debugf("Setting up sessions")
+		muxes := *ms
+		for k := range muxes {
+			muxes[k].session = waitConn()
+			muxes[k].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
+		}
+	}
+	createSessions(&muxes)
 
 	chScavenger := make(chan *smux.Session, 128)
 	go scavenger(chScavenger, config.ScavengeTTL)
 	go snmpLogger(config.SnmpLog, config.SnmpPeriod)
 	rr := uint16(0)
 	for {
-		p1, err := listener.AcceptTCP()
-		if err != nil {
-			return err
-		}
-		if err != nil {
-			return err
-		}
-		idx := rr % numconn
+		for {
+			select {
+			case _ = <-refresh:
+				createSessions(&muxes)
+				break
+			default:
+				p1, err := listener.AcceptTCP()
+				if err != nil {
+					return err
+				}
+				if err != nil {
+					return err
+				}
+				idx := rr % numconn
 
-		// do auto expiration && reconnection
-		if muxes[idx].session.IsClosed() || (config.AutoExpire > 0 && time.Now().After(muxes[idx].ttl)) {
-			chScavenger <- muxes[idx].session
-			muxes[idx].session = waitConn()
-			muxes[idx].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
-		}
+				// do auto expiration && reconnection
+				if muxes[idx].session.IsClosed() || (config.AutoExpire > 0 && time.Now().After(muxes[idx].ttl)) {
+					chScavenger <- muxes[idx].session
+					muxes[idx].session = waitConn()
+					muxes[idx].ttl = time.Now().Add(time.Duration(config.AutoExpire) * time.Second)
+				}
 
-		go handleClient(muxes[idx].session, p1)
-		rr++
+				go handleClient(muxes[idx].session, p1)
+				rr++
+			}
+		}
 	}
 }
 
