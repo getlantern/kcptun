@@ -76,7 +76,7 @@ func handleClient(sess *smux.Session, p1 io.ReadWriteCloser) {
 	}
 }
 
-func Run(config *Config, version string, onListening func(net.Addr), refresh <-chan struct{}) error {
+func Run(config *Config, version string, onListening func(net.Addr), refresh <-chan bool) error {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	switch config.Mode {
 	case "normal":
